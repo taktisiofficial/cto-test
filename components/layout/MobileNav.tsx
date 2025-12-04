@@ -1,15 +1,15 @@
 "use client";
 
-import { Home, TrendingUp, Wallet, PieChart, Settings, CreditCard } from "lucide-react";
+import { Home, TrendingUp, Wallet, Tag, Settings, CreditCard } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const navItems = [
   { icon: Home, label: "Home", href: "/" },
   { icon: CreditCard, label: "Txns", href: "/transactions" },
+  { icon: Tag, label: "Categories", href: "/categories" },
   { icon: TrendingUp, label: "Trends", href: "/trends" },
   { icon: Wallet, label: "Wallet", href: "/wallet" },
-  { icon: PieChart, label: "Analytics", href: "/analytics" },
 ];
 
 export default function MobileNav() {

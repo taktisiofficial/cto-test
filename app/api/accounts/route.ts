@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
     });
 
     const [response, status] = apiResponse.success({
-      accounts: accounts.map((acc) => ({
+      accounts: accounts.map((acc: any) => ({
         ...acc,
         transactionCount: acc.transactions.length,
         transactions: undefined,

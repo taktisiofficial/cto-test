@@ -5,7 +5,6 @@ import {
   createTransactionSchema,
   transactionFiltersSchema,
 } from "@/lib/validations";
-import type { Prisma } from "../../../.prisma/generated";
 
 export async function GET(request: NextRequest) {
   try {
@@ -27,7 +26,7 @@ export async function GET(request: NextRequest) {
     const { type, categoryId, startDate, endDate, search, limit, offset } =
       parsed.data;
 
-    const where: Prisma.TransactionWhereInput = {};
+    const where: any = {};
 
     if (type) {
       where.type = type;
