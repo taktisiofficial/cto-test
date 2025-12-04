@@ -1,9 +1,60 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import useSWR from "swr";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import { TrendingUp, TrendingDown, DollarSign, CreditCard, Activity } from "lucide-react";
+import Link from "next/link";
+
+const fetcher = (url: string) => fetch(url).then((res) => res.json());
+
+interface DashboardData {
+  totalBalance: number;
+  totalIncome: number;
+  totalExpense: number;
+  transactions: any[];
+}
 
 export default function Home() {
+  const { data, isLoading } = useSWR<any>("/api/dashboard", fetcher);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  const dashboardData: DashboardData = data?.data || {
+    totalBalance: 0,
+    totalIncome: 0,
+    totalExpense: 0,
+    transactions: [],
+  };
+
+  const recentTransactions = dashboardData.transactions.slice(0, 4);
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+    }).format(amount);
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - date.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) return "Today";
+    if (diffDays === 1) return "Yesterday";
+    if (diffDays < 7) return `${diffDays} days ago`;
+    return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  };
+
+  if (!isMounted) return null;
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -22,7 +73,7 @@ export default function Home() {
                   Total Balance
                 </p>
                 <h3 className="mt-1 text-2xl font-bold text-foreground">
-                  $24,563.00
+                  {isLoading ? "..." : formatCurrency(dashboardData.totalBalance)}
                 </h3>
                 <div className="mt-1 flex items-center text-sm text-success">
                   <TrendingUp className="mr-1 h-4 w-4" />
@@ -42,7 +93,7 @@ export default function Home() {
                   Total Income
                 </p>
                 <h3 className="mt-1 text-2xl font-bold text-foreground">
-                  $8,234.00
+                  {isLoading ? "..." : formatCurrency(dashboardData.totalIncome)}
                 </h3>
                 <div className="mt-1 flex items-center text-sm text-success">
                   <TrendingUp className="mr-1 h-4 w-4" />
@@ -62,7 +113,7 @@ export default function Home() {
                   Total Expenses
                 </p>
                 <h3 className="mt-1 text-2xl font-bold text-foreground">
-                  $3,456.00
+                  {isLoading ? "..." : formatCurrency(dashboardData.totalExpense)}
                 </h3>
                 <div className="mt-1 flex items-center text-sm text-danger">
                   <TrendingDown className="mr-1 h-4 w-4" />
@@ -100,59 +151,45 @@ export default function Home() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {[
-                  {
-                    name: "Grocery Store",
-                    amount: "-$156.00",
-                    date: "Today, 2:30 PM",
-                    type: "expense",
-                  },
-                  {
-                    name: "Salary Deposit",
-                    amount: "+$3,500.00",
-                    date: "Yesterday",
-                    type: "income",
-                  },
-                  {
-                    name: "Electric Bill",
-                    amount: "-$89.00",
-                    date: "Dec 2",
-                    type: "expense",
-                  },
-                  {
-                    name: "Freelance Work",
-                    amount: "+$1,200.00",
-                    date: "Dec 1",
-                    type: "income",
-                  },
-                ].map((transaction, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center justify-between border-b border-gray-100 pb-4 last:border-0 last:pb-0 dark:border-gray-800"
-                  >
-                    <div>
-                      <p className="font-medium text-foreground">
-                        {transaction.name}
-                      </p>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        {transaction.date}
-                      </p>
-                    </div>
-                    <span
-                      className={`font-semibold ${
-                        transaction.type === "income"
-                          ? "text-success"
-                          : "text-danger"
-                      }`}
+                {isLoading ? (
+                  <div className="text-center text-gray-500 py-4">Loading...</div>
+                ) : recentTransactions.length > 0 ? (
+                  recentTransactions.map((transaction) => (
+                    <div
+                      key={transaction.id}
+                      className="flex items-center justify-between border-b border-gray-100 pb-4 last:border-0 last:pb-0 dark:border-gray-800"
                     >
-                      {transaction.amount}
-                    </span>
+                      <div>
+                        <p className="font-medium text-foreground">
+                          {transaction.description}
+                        </p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                          {formatDate(transaction.date)} • {transaction.category?.name}
+                        </p>
+                      </div>
+                      <span
+                        className={`font-semibold ${
+                          transaction.type === "income"
+                            ? "text-success"
+                            : "text-danger"
+                        }`}
+                      >
+                        {transaction.type === "income" ? "+" : "-"}
+                        {formatCurrency(transaction.amount)}
+                      </span>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center text-gray-500 py-4">
+                    No transactions yet
                   </div>
-                ))}
+                )}
               </div>
-              <Button variant="outline" className="mt-4 w-full">
-                View All Transactions
-              </Button>
+              <Link href="/transactions" className="block mt-4">
+                <Button variant="outline" className="w-full">
+                  View All Transactions
+                </Button>
+              </Link>
             </CardContent>
           </Card>
 
@@ -203,9 +240,11 @@ export default function Home() {
           </CardHeader>
           <CardContent>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              <Button variant="primary" className="w-full">
-                Add Transaction
-              </Button>
+              <Link href="/transactions">
+                <Button variant="primary" className="w-full">
+                  Add Transaction
+                </Button>
+              </Link>
               <Button variant="secondary" className="w-full">
                 Transfer Money
               </Button>

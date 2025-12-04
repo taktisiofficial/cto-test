@@ -1,11 +1,12 @@
 "use client";
 
-import { Home, TrendingUp, Wallet, PieChart, Settings, X } from "lucide-react";
+import { Home, TrendingUp, Wallet, PieChart, Settings, X, CreditCard } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const navItems = [
   { icon: Home, label: "Dashboard", href: "/" },
+  { icon: CreditCard, label: "Transactions", href: "/transactions" },
   { icon: TrendingUp, label: "Trends", href: "/trends" },
   { icon: Wallet, label: "Wallet", href: "/wallet" },
   { icon: PieChart, label: "Analytics", href: "/analytics" },
