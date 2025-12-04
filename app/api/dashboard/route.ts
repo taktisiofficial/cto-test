@@ -21,16 +21,16 @@ export async function GET(request: NextRequest) {
       }),
     ]);
 
-    const incomeTransactions = transactions.filter((t) => t.type === "income");
-    const expenseTransactions = transactions.filter((t) => t.type === "expense");
+    const incomeTransactions = transactions.filter((t: any) => t.type === "income");
+    const expenseTransactions = transactions.filter((t: any) => t.type === "expense");
 
-    const totalBalance = accounts.reduce((sum, acc) => sum + acc.balance, 0);
+    const totalBalance = accounts.reduce((sum: number, acc: any) => sum + acc.balance, 0);
     const totalIncome = incomeTransactions.reduce(
-      (sum, trans) => sum + trans.amount,
+      (sum: number, trans: any) => sum + trans.amount,
       0
     );
     const totalExpense = expenseTransactions.reduce(
-      (sum, trans) => sum + trans.amount,
+      (sum: number, trans: any) => sum + trans.amount,
       0
     );
 

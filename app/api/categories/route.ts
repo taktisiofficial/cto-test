@@ -50,15 +50,17 @@ export async function POST(request: NextRequest) {
 
     const { name, type, color, icon } = parsed.data;
 
-    const existing = await prisma.category.findUnique({
-      where: { name },
+    const existing = await prisma.category.findFirst({
+      where: {
+        name,
+        type,
+      },
     });
 
     if (existing) {
-      const [response, status] = apiResponse.error(
-        "Category already exists",
-        409
-      );
+      const [response, status] = apiResponse.validationError({
+        name: [`A ${type} category with this name already exists`],
+      });
       return NextResponse.json(response, { status });
     }
 
