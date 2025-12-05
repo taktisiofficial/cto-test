@@ -1,7 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Button from "@/components/ui/Button";
+import Input from "@/components/ui/Input";
+import Select from "@/components/ui/Select";
 import type { CreateTransactionInput } from "@/lib/validations";
 
 interface Category {
@@ -32,9 +34,14 @@ interface TransactionFormProps {
   transaction?: Transaction;
   categories: Category[];
   accounts: Account[];
-  onSubmit: (data: CreateTransactionInput | any) => Promise<void>;
+  onSubmit: (data: CreateTransactionInput | Record<string, unknown>) => Promise<void>;
   isLoading?: boolean;
 }
+
+const prefersReducedMotion = () => {
+  if (typeof window === "undefined") return false;
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+};
 
 export function TransactionForm({
   transaction,
@@ -66,9 +73,10 @@ export function TransactionForm({
 
     try {
       await onSubmit(data);
-    } catch (error: any) {
-      if (error.response?.data?.errors) {
-        setErrors(error.response.data.errors);
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { errors?: Record<string, string[]> } } };
+      if (err.response?.data?.errors) {
+        setErrors(err.response.data.errors);
       }
     }
   };
@@ -81,20 +89,35 @@ export function TransactionForm({
     ? new Date(transaction.date).toISOString().split("T")[0]
     : new Date().toISOString().split("T")[0];
 
+  const animationClass = prefersReducedMotion()
+    ? ""
+    : "animate-in fade-in duration-200";
+
+  const categoryOptions = filteredCategories.map((cat) => ({
+    value: cat.id,
+    label: cat.name,
+  }));
+
+  const accountOptions = accounts.map((acc) => ({
+    value: acc.id,
+    label: acc.name,
+  }));
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className={`space-y-5 ${animationClass}`}>
+      {/* Type Selection */}
       <div>
-        <label className="block text-sm font-medium text-foreground mb-2">
-          Type
+        <label className="block text-sm font-semibold text-[var(--text-primary)] mb-2.5">
+          Transaction Type
         </label>
         <div className="flex gap-2">
           <button
             type="button"
             onClick={() => setType("expense")}
-            className={`flex-1 rounded-lg px-4 py-2 transition-colors ${
+            className={`flex-1 rounded-[var(--radius-md)] px-4 py-3 font-medium transition-all duration-[var(--duration-base)] ease-[var(--ease-out)] ${
               type === "expense"
-                ? "bg-danger text-white"
-                : "border border-gray-300 bg-white text-foreground dark:border-gray-700 dark:bg-gray-800"
+                ? "bg-[var(--danger-600)] text-white shadow-[var(--shadow-sm)]"
+                : "border border-[var(--border-default)] bg-[var(--surface-base)] text-[var(--text-primary)] hover:bg-[var(--surface-1)]"
             }`}
           >
             Expense
@@ -102,10 +125,10 @@ export function TransactionForm({
           <button
             type="button"
             onClick={() => setType("income")}
-            className={`flex-1 rounded-lg px-4 py-2 transition-colors ${
+            className={`flex-1 rounded-[var(--radius-md)] px-4 py-3 font-medium transition-all duration-[var(--duration-base)] ease-[var(--ease-out)] ${
               type === "income"
-                ? "bg-success text-white"
-                : "border border-gray-300 bg-white text-foreground dark:border-gray-700 dark:bg-gray-800"
+                ? "bg-[var(--success-600)] text-white shadow-[var(--shadow-sm)]"
+                : "border border-[var(--border-default)] bg-[var(--surface-base)] text-[var(--text-primary)] hover:bg-[var(--surface-1)]"
             }`}
           >
             Income
@@ -113,142 +136,88 @@ export function TransactionForm({
         </div>
       </div>
 
-      <div>
-        <label htmlFor="description" className="block text-sm font-medium text-foreground mb-2">
-          Description
-        </label>
-        <input
-          id="description"
-          type="text"
-          name="description"
-          defaultValue={transaction?.description || ""}
+      {/* Description */}
+      <Input
+        id="description"
+        name="description"
+        label="Description"
+        type="text"
+        defaultValue={transaction?.description || ""}
+        required
+        maxLength={255}
+        placeholder="e.g., Grocery shopping, Monthly salary"
+        error={getErrorMessage("description")}
+        helperText={getErrorMessage("description") ? undefined : "What is this transaction for?"}
+      />
+
+      {/* Amount and Date */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <Input
+          id="amount"
+          name="amount"
+          label="Amount"
+          type="number"
+          defaultValue={transaction?.amount || ""}
           required
-          maxLength={255}
-          className={`w-full rounded-lg border ${
-            getErrorMessage("description")
-              ? "border-danger"
-              : "border-gray-300 dark:border-gray-700"
-          } bg-white px-4 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-secondary dark:bg-gray-800`}
-          placeholder="Enter transaction description"
+          step="0.01"
+          min="0"
+          placeholder="0.00"
+          inputMode="decimal"
+          error={getErrorMessage("amount")}
+          helperText={getErrorMessage("amount") ? undefined : "Enter the transaction amount"}
         />
-        {getErrorMessage("description") && (
-          <p className="mt-1 text-sm text-danger">
-            {getErrorMessage("description")}
-          </p>
-        )}
-      </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label htmlFor="amount" className="block text-sm font-medium text-foreground mb-2">
-            Amount
-          </label>
-          <input
-            id="amount"
-            type="number"
-            name="amount"
-            defaultValue={transaction?.amount || ""}
-            required
-            step="0.01"
-            min="0"
-            className={`w-full rounded-lg border ${
-              getErrorMessage("amount")
-                ? "border-danger"
-                : "border-gray-300 dark:border-gray-700"
-            } bg-white px-4 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-secondary dark:bg-gray-800`}
-            placeholder="0.00"
-          />
-          {getErrorMessage("amount") && (
-            <p className="mt-1 text-sm text-danger">
-              {getErrorMessage("amount")}
-            </p>
-          )}
-        </div>
-
-        <div>
-          <label htmlFor="date" className="block text-sm font-medium text-foreground mb-2">
-            Date
-          </label>
-          <input
-            id="date"
-            type="date"
-            name="date"
-            defaultValue={dateValue}
-            required
-            className={`w-full rounded-lg border ${
-              getErrorMessage("date")
-                ? "border-danger"
-                : "border-gray-300 dark:border-gray-700"
-            } bg-white px-4 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-secondary dark:bg-gray-800`}
-          />
-          {getErrorMessage("date") && (
-            <p className="mt-1 text-sm text-danger">
-              {getErrorMessage("date")}
-            </p>
-          )}
-        </div>
-      </div>
-
-      <div>
-        <label htmlFor="categoryId" className="block text-sm font-medium text-foreground mb-2">
-          Category
-        </label>
-        <select
-          id="categoryId"
-          name="categoryId"
-          defaultValue={transaction?.categoryId || ""}
+        <Input
+          id="date"
+          name="date"
+          label="Date"
+          type="date"
+          defaultValue={dateValue}
           required
-          className={`w-full rounded-lg border ${
-            getErrorMessage("categoryId")
-              ? "border-danger"
-              : "border-gray-300 dark:border-gray-700"
-          } bg-white px-4 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-secondary dark:bg-gray-800`}
-        >
-          <option value="">Select a category</option>
-          {filteredCategories.map((cat) => (
-            <option key={cat.id} value={cat.id}>
-              {cat.name}
-            </option>
-          ))}
-        </select>
-        {getErrorMessage("categoryId") && (
-          <p className="mt-1 text-sm text-danger">
-            {getErrorMessage("categoryId")}
-          </p>
-        )}
+          error={getErrorMessage("date")}
+          helperText={getErrorMessage("date") ? undefined : "When did this happen?"}
+        />
       </div>
 
-      <div>
-        <label htmlFor="accountId" className="block text-sm font-medium text-foreground mb-2">
-          Account
-        </label>
-        <select
-          id="accountId"
-          name="accountId"
-          defaultValue={transaction?.accountId || ""}
-          required
-          className={`w-full rounded-lg border ${
-            getErrorMessage("accountId")
-              ? "border-danger"
-              : "border-gray-300 dark:border-gray-700"
-          } bg-white px-4 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-secondary dark:bg-gray-800`}
-        >
-          <option value="">Select an account</option>
-          {accounts.map((acc) => (
-            <option key={acc.id} value={acc.id}>
-              {acc.name}
-            </option>
-          ))}
-        </select>
-        {getErrorMessage("accountId") && (
-          <p className="mt-1 text-sm text-danger">
-            {getErrorMessage("accountId")}
-          </p>
-        )}
-      </div>
+      {/* Category */}
+      <Select
+        id="categoryId"
+        name="categoryId"
+        label="Category"
+        options={[
+          { value: "", label: "Select a category", disabled: true },
+          ...categoryOptions,
+        ]}
+        defaultValue={transaction?.categoryId || ""}
+        required
+        error={getErrorMessage("categoryId")}
+        helperText={getErrorMessage("categoryId") ? undefined : `Choose a ${type} category`}
+      />
 
-      <div className="flex gap-2 pt-4">
-        <Button type="submit" variant="primary" disabled={isLoading} className="flex-1">
+      {/* Account */}
+      <Select
+        id="accountId"
+        name="accountId"
+        label="Account"
+        options={[
+          { value: "", label: "Select an account", disabled: true },
+          ...accountOptions,
+        ]}
+        defaultValue={transaction?.accountId || ""}
+        required
+        error={getErrorMessage("accountId")}
+        helperText={getErrorMessage("accountId") ? undefined : "Which account is this for?"}
+      />
+
+      {/* Submit Button */}
+      <div className="flex gap-3 pt-4">
+        <Button
+          type="submit"
+          variant="primary"
+          loading={isLoading}
+          size="lg"
+          className="flex-1"
+        >
           {isLoading ? "Saving..." : transaction ? "Update Transaction" : "Create Transaction"}
         </Button>
       </div>
