@@ -1,4 +1,4 @@
-use client
+"use client";
 
 import { useState, useEffect } from "react";
 import Header from "./Header";
@@ -25,7 +25,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
     if (window.visualViewport) {
       window.visualViewport.addEventListener('resize', handleResize);
-      return () => window.visualViewport.removeEventListener('resize', handleResize);
+      const viewport = window.visualViewport;
+      return () => viewport.removeEventListener('resize', handleResize);
     }
   }, []);
 
