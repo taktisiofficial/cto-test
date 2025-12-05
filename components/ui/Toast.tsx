@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { X, AlertCircle, CheckCircle } from "lucide-react";
+import { X, AlertCircle, CheckCircle, Info } from "lucide-react";
 
 interface ToastProps {
   id: string;
@@ -20,52 +20,61 @@ export function Toast({
   duration = 5000,
   onClose,
 }: ToastProps) {
+  const [isExiting, setIsExiting] = useState(false);
+
   useEffect(() => {
     const timer = setTimeout(() => {
-      onClose(id);
+      setIsExiting(true);
+      setTimeout(() => onClose(id), 200);
     }, duration);
     return () => clearTimeout(timer);
   }, [id, duration, onClose]);
 
-  const bgColor = {
-    success: "bg-green-50 dark:bg-green-900/20",
-    error: "bg-red-50 dark:bg-red-900/20",
-    info: "bg-blue-50 dark:bg-blue-900/20",
+  const styles = {
+    success: {
+      bg: "bg-[var(--success-50)] border-[var(--success-500)]",
+      text: "text-[var(--success-700)]",
+      icon: "text-[var(--success-600)]",
+    },
+    error: {
+      bg: "bg-[var(--danger-50)] border-[var(--danger-500)]",
+      text: "text-[var(--danger-700)]",
+      icon: "text-[var(--danger-600)]",
+    },
+    info: {
+      bg: "bg-[var(--info-50)] border-[var(--info-500)]",
+      text: "text-[var(--info-700)]",
+      icon: "text-[var(--info-600)]",
+    },
   }[type];
 
-  const borderColor = {
-    success: "border-green-200 dark:border-green-800",
-    error: "border-red-200 dark:border-red-800",
-    info: "border-blue-200 dark:border-blue-800",
-  }[type];
-
-  const textColor = {
-    success: "text-green-800 dark:text-green-200",
-    error: "text-red-800 dark:text-red-200",
-    info: "text-blue-800 dark:text-blue-200",
-  }[type];
-
-  const iconColor = {
-    success: "text-green-500 dark:text-green-400",
-    error: "text-red-500 dark:text-red-400",
-    info: "text-blue-500 dark:text-blue-400",
-  }[type];
-
-  const Icon = type === "success" ? CheckCircle : type === "error" ? AlertCircle : AlertCircle;
+  const Icon =
+    type === "success"
+      ? CheckCircle
+      : type === "error"
+      ? AlertCircle
+      : Info;
 
   return (
     <div
-      className={`rounded-lg border ${borderColor} ${bgColor} p-4 ${textColor} flex items-start gap-3 shadow-lg`}
+      className={`rounded-[var(--radius-lg)] border-l-4 ${styles.bg} p-4 ${styles.text} flex items-start gap-3 shadow-[var(--shadow-lg)] backdrop-blur-sm transition-all duration-[var(--duration-base)] ease-[var(--ease-out)] ${
+        isExiting ? "opacity-0 translate-x-full" : "opacity-100 translate-x-0"
+      }`}
       role="alert"
+      aria-live="polite"
     >
-      <Icon className={`h-5 w-5 flex-shrink-0 ${iconColor}`} />
-      <div className="flex-1">
-        {title && <p className="font-semibold">{title}</p>}
+      <Icon className={`h-5 w-5 flex-shrink-0 ${styles.icon} mt-0.5`} />
+      <div className="flex-1 min-w-0">
+        {title && <p className="font-semibold mb-1">{title}</p>}
         <p className="text-sm">{message}</p>
       </div>
       <button
-        onClick={() => onClose(id)}
-        className="flex-shrink-0 text-current opacity-50 hover:opacity-100 transition-opacity"
+        onClick={() => {
+          setIsExiting(true);
+          setTimeout(() => onClose(id), 200);
+        }}
+        className="flex-shrink-0 rounded-[var(--radius-sm)] p-1 text-current opacity-60 hover:opacity-100 hover:bg-black/5 transition-all duration-[var(--duration-fast)] ease-[var(--ease-out)] focus-visible:outline-none focus-visible:ring-[var(--focus-ring-width)] focus-visible:ring-[var(--focus-ring-color)] min-h-[44px] min-w-[44px] flex items-center justify-center"
+        aria-label="Dismiss notification"
       >
         <X className="h-4 w-4" />
       </button>
@@ -80,9 +89,15 @@ interface ToastContainerProps {
 
 export function ToastContainer({ toasts, onClose }: ToastContainerProps) {
   return (
-    <div className="fixed bottom-4 right-4 z-50 space-y-2 max-w-sm">
+    <div
+      className="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none"
+      aria-live="polite"
+      aria-atomic="false"
+    >
       {toasts.map((toast) => (
-        <Toast key={toast.id} {...toast} onClose={onClose} />
+        <div key={toast.id} className="pointer-events-auto">
+          <Toast {...toast} onClose={onClose} />
+        </div>
       ))}
     </div>
   );
