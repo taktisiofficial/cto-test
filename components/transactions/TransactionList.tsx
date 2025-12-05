@@ -1,7 +1,8 @@
 "use client";
 
 import { Trash2, Edit2 } from "lucide-react";
-import Button from "@/components/ui/Button";
+import { SkeletonTable } from "@/components/ui/Skeleton";
+import EmptyState from "@/components/ui/EmptyState";
 
 interface Category {
   id: string;
@@ -43,7 +44,6 @@ const formatDate = (dateString: string) => {
   return date.toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
-    year: "numeric",
   });
 };
 
@@ -54,76 +54,102 @@ const formatCurrency = (amount: number) => {
   }).format(amount);
 };
 
+const getCategoryColor = (type: "income" | "expense"): string => {
+  return type === "income" ? "bg-[var(--success-100)]" : "bg-[var(--danger-100)]";
+};
+
+const getCategoryTextColor = (type: "income" | "expense"): string => {
+  return type === "income" ? "text-[var(--success-700)]" : "text-[var(--danger-700)]";
+};
+
+const getCategoryInitial = (name: string): string => {
+  return name.charAt(0).toUpperCase();
+};
+
 export function TransactionListDesktop({ transactions, isLoading, onEdit, onDelete, isDeleting = {} }: TransactionListProps) {
   if (isLoading) {
-    return (
-      <div className="rounded-lg border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900 overflow-hidden">
-        <div className="p-6 text-center text-gray-500">Loading transactions...</div>
-      </div>
-    );
+    return <SkeletonTable rows={6} />;
   }
 
   if (transactions.length === 0) {
     return (
-      <div className="rounded-lg border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900 overflow-hidden">
-        <div className="p-12 text-center">
-          <p className="text-gray-500 dark:text-gray-400 mb-2">No transactions found</p>
-          <p className="text-sm text-gray-400 dark:text-gray-500">Start by creating your first transaction</p>
-        </div>
-      </div>
+      <EmptyState
+        title="No transactions yet"
+        description="Create your first transaction to get started"
+        className="rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-base)]"
+      />
     );
   }
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900 overflow-hidden">
+    <div className="rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-base)] overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full">
-          <thead>
-            <tr className="border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50">
-              <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">Description</th>
-              <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">Category</th>
-              <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">Account</th>
-              <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">Date</th>
-              <th className="px-6 py-3 text-right text-sm font-semibold text-foreground">Amount</th>
-              <th className="px-6 py-3 text-right text-sm font-semibold text-foreground">Actions</th>
+          <thead className="sticky top-0">
+            <tr className="border-b border-[var(--border-default)] bg-[var(--surface-1)]">
+              <th className="px-6 py-3 text-left text-sm font-semibold text-[var(--text-primary)]">Description</th>
+              <th className="px-6 py-3 text-left text-sm font-semibold text-[var(--text-primary)]">Category</th>
+              <th className="px-6 py-3 text-left text-sm font-semibold text-[var(--text-primary)]">Account</th>
+              <th className="px-6 py-3 text-left text-sm font-semibold text-[var(--text-primary)]">Date</th>
+              <th className="px-6 py-3 text-right text-sm font-semibold text-[var(--text-primary)]">Amount</th>
+              <th className="px-6 py-3 text-right text-sm font-semibold text-[var(--text-primary)]">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
-            {transactions.map((transaction) => (
-              <tr key={transaction.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                <td className="px-6 py-4 text-sm text-foreground">{transaction.description}</td>
+          <tbody className="divide-y divide-[var(--border-default)]">
+            {transactions.map((transaction, idx) => (
+              <tr
+                key={transaction.id}
+                className={`transition-colors ${
+                  idx % 2 === 0
+                    ? "bg-[var(--surface-base)] hover:bg-[var(--surface-1)]"
+                    : "bg-[var(--surface-1)] hover:bg-[var(--surface-2)]"
+                }`}
+              >
+                <td className="px-6 py-4 text-sm text-[var(--text-primary)] font-medium">{transaction.description}</td>
                 <td className="px-6 py-4 text-sm">
-                  <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-gray-100 dark:bg-gray-800 text-foreground">
-                    {transaction.category.name}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <div
+                      className={`h-8 w-8 rounded-full flex items-center justify-center text-xs font-semibold ${getCategoryColor(
+                        transaction.type
+                      )} ${getCategoryTextColor(transaction.type)}`}
+                    >
+                      {getCategoryInitial(transaction.category.name)}
+                    </div>
+                    <span className="text-[var(--text-primary)]">{transaction.category.name}</span>
+                  </div>
                 </td>
-                <td className="px-6 py-4 text-sm text-foreground">{transaction.account.name}</td>
-                <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
+                <td className="px-6 py-4 text-sm text-[var(--text-secondary)]">{transaction.account.name}</td>
+                <td className="px-6 py-4 text-sm text-[var(--text-secondary)]">
                   {formatDate(transaction.date)}
                 </td>
-                <td className={`px-6 py-4 text-sm font-semibold text-right ${
-                  transaction.type === "income"
-                    ? "text-success"
-                    : "text-danger"
-                }`}>
-                  {transaction.type === "income" ? "+" : "-"}{formatCurrency(transaction.amount)}
+                <td
+                  className={`px-6 py-4 text-sm font-semibold text-right ${
+                    transaction.type === "income"
+                      ? "text-[var(--success-600)]"
+                      : "text-[var(--danger-600)]"
+                  }`}
+                >
+                  {transaction.type === "income" ? "+" : "-"}
+                  {formatCurrency(transaction.amount)}
                 </td>
                 <td className="px-6 py-4 text-right">
-                  <div className="flex items-center justify-end gap-2">
+                  <div className="flex items-center justify-end gap-1">
                     <button
                       onClick={() => onEdit(transaction)}
-                      className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-                      title="Edit"
+                      className="p-2 hover:bg-[var(--surface-2)] rounded-[var(--radius-md)] transition-colors"
+                      title="Edit transaction"
+                      aria-label="Edit transaction"
                     >
-                      <Edit2 className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+                      <Edit2 className="h-4 w-4 text-[var(--text-secondary)]" />
                     </button>
                     <button
                       onClick={() => onDelete(transaction.id)}
                       disabled={isDeleting[transaction.id]}
-                      className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                      title="Delete"
+                      className="p-2 hover:bg-[var(--surface-2)] rounded-[var(--radius-md)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      title="Delete transaction"
+                      aria-label="Delete transaction"
                     >
-                      <Trash2 className="h-4 w-4 text-danger" />
+                      <Trash2 className="h-4 w-4 text-[var(--danger-600)]" />
                     </button>
                   </div>
                 </td>
@@ -140,64 +166,82 @@ export function TransactionListMobile({ transactions, isLoading, onEdit, onDelet
   if (isLoading) {
     return (
       <div className="space-y-3">
-        <div className="rounded-lg bg-gray-100 dark:bg-gray-800 p-4 text-center text-gray-500">
-          Loading transactions...
-        </div>
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div key={i} className="rounded-[var(--radius-lg)] bg-[var(--surface-1)] p-4 h-20 animate-pulse" />
+        ))}
       </div>
     );
   }
 
   if (transactions.length === 0) {
     return (
-      <div className="rounded-lg bg-white dark:bg-gray-900 p-6 text-center border border-gray-200 dark:border-gray-800">
-        <p className="text-gray-500 dark:text-gray-400 mb-2">No transactions found</p>
-        <p className="text-sm text-gray-400 dark:text-gray-500">Start by creating your first transaction</p>
-      </div>
+      <EmptyState
+        title="No transactions yet"
+        description="Create your first transaction to get started"
+        className="rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-base)]"
+      />
     );
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
       {transactions.map((transaction) => (
         <div
           key={transaction.id}
-          className="rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4"
+          className="rounded-[var(--radius-lg)] border-l-4 border-l-[var(--border-default)] border border-[var(--border-default)] bg-[var(--surface-base)] p-3 flex items-start justify-between gap-3 active:bg-[var(--surface-1)] transition-colors"
+          style={{
+            borderLeftColor:
+              transaction.type === "income"
+                ? "var(--success-500)"
+                : "var(--danger-500)",
+          }}
         >
-          <div className="flex items-start justify-between mb-3">
-            <div className="flex-1">
-              <p className="font-medium text-foreground">{transaction.description}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                {formatDate(transaction.date)} • {transaction.account.name}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              <div
+                className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0 ${getCategoryColor(
+                  transaction.type
+                )} ${getCategoryTextColor(transaction.type)}`}
+              >
+                {getCategoryInitial(transaction.category.name)}
+              </div>
+              <p className="font-medium text-[var(--text-primary)] truncate text-sm">
+                {transaction.description}
               </p>
             </div>
-            <span className={`font-semibold text-sm ${
-              transaction.type === "income"
-                ? "text-success"
-                : "text-danger"
-            }`}>
-              {transaction.type === "income" ? "+" : "-"}{formatCurrency(transaction.amount)}
-            </span>
+            <p className="text-xs text-[var(--text-tertiary)]">
+              {formatDate(transaction.date)} • {transaction.account.name}
+            </p>
           </div>
 
-          <div className="flex items-center justify-between">
-            <span className="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium bg-gray-100 dark:bg-gray-800 text-foreground">
-              {transaction.category.name}
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            <span
+              className={`font-semibold text-sm whitespace-nowrap ${
+                transaction.type === "income"
+                  ? "text-[var(--success-600)]"
+                  : "text-[var(--danger-600)]"
+              }`}
+            >
+              {transaction.type === "income" ? "+" : "-"}
+              {formatCurrency(transaction.amount)}
             </span>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-0.5">
               <button
                 onClick={() => onEdit(transaction)}
-                className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors"
+                className="p-1.5 hover:bg-[var(--surface-1)] rounded transition-colors"
                 title="Edit"
+                aria-label="Edit transaction"
               >
-                <Edit2 className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+                <Edit2 className="h-4 w-4 text-[var(--text-secondary)]" />
               </button>
               <button
                 onClick={() => onDelete(transaction.id)}
                 disabled={isDeleting[transaction.id]}
-                className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="p-1.5 hover:bg-[var(--surface-1)] rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 title="Delete"
+                aria-label="Delete transaction"
               >
-                <Trash2 className="h-4 w-4 text-danger" />
+                <Trash2 className="h-4 w-4 text-[var(--danger-600)]" />
               </button>
             </div>
           </div>
